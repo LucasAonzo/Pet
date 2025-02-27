@@ -1,3 +1,5 @@
+// Import polyfills first
+import './src/utils/polyfills';
 import 'react-native-gesture-handler';
 import React from 'react';
 import { StyleSheet } from 'react-native';
@@ -9,6 +11,7 @@ import { Icon } from 'react-native-elements';
 import { enableScreens } from 'react-native-screens';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Import screens from their respective files
 import HomeScreen from './src/screens/HomeScreen';
@@ -27,6 +30,9 @@ enableScreens();
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
+
+// Create a client
+const queryClient = new QueryClient();
 
 // Home Stack Navigator
 const HomeStack = () => (
@@ -133,27 +139,29 @@ const TabNavigator = () => (
 // Main App Component with Navigation
 export default function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <NavigationContainer>
-          <Drawer.Navigator
-            drawerContent={(props) => <SideMenu {...props} />}
-            screenOptions={{
-              drawerStyle: {
-                width: '80%',
-                backgroundColor: '#fff',
-              },
-              drawerType: 'front',
-              overlayColor: 'rgba(0,0,0,0.6)',
-              swipeEnabled: true,
-              headerShown: false,
-            }}
-          >
-            <Drawer.Screen name="Main" component={TabNavigator} />
-          </Drawer.Navigator>
-        </NavigationContainer>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <QueryClientProvider client={queryClient}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <NavigationContainer>
+            <Drawer.Navigator
+              drawerContent={(props) => <SideMenu {...props} />}
+              screenOptions={{
+                drawerStyle: {
+                  width: '80%',
+                  backgroundColor: '#fff',
+                },
+                drawerType: 'front',
+                overlayColor: 'rgba(0,0,0,0.6)',
+                swipeEnabled: true,
+                headerShown: false,
+              }}
+            >
+              <Drawer.Screen name="Main" component={TabNavigator} />
+            </Drawer.Navigator>
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </QueryClientProvider>
   );
 }
 

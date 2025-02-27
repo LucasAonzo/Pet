@@ -1,8 +1,38 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 // Set base URL for API requests
-const API_URL = 'http://10.0.2.2:5000/api'; // Use this for Android emulator
-// const API_URL = 'http://localhost:5000/api'; // Use this for iOS simulator
+let API_URL;
+
+// Determine the correct API URL based on the environment
+if (__DEV__) {
+  // For Android emulator
+  if (Platform.OS === 'android') {
+    // Check if running on physical device or emulator
+    if (Platform.constants.Brand !== 'google') {
+      // Physical Android device
+      API_URL = 'http://172.20.10.5:5000/api'; // Your computer's IP address
+    } else {
+      // Android emulator
+      API_URL = 'http://10.0.2.2:5000/api';
+    }
+  } 
+  // For iOS
+  else if (Platform.OS === 'ios') {
+    // We'll assume physical device for now since using Expo Go
+    API_URL = 'http://172.20.10.5:5000/api'; // Your computer's IP address
+  }
+  // Fallback for other environments
+  else {
+    API_URL = 'http://172.20.10.5:5000/api'; // Your computer's IP address
+  }
+} else {
+  // Production environment
+  API_URL = 'https://your-production-api.com/api';
+}
+
+console.log('Using API URL:', API_URL);
 
 /**
  * Get authentication token from storage
@@ -56,13 +86,30 @@ const apiRequest = async (endpoint, method = 'GET', data = null) => {
     const config = {
       method,
       headers,
+      // Add timeout to prevent long waiting times
+      timeout: 10000, // 10 seconds timeout
     };
 
     if (data && (method === 'POST' || method === 'PUT')) {
       config.body = JSON.stringify(data);
     }
 
-    const response = await fetch(`${API_URL}${endpoint}`, config);
+    console.log(`Fetching: ${API_URL}${endpoint}`);
+    
+    // Using a timeout promise to handle network timeouts better
+    const fetchWithTimeout = (url, options) => {
+      const timeout = options.timeout || 8000;
+      delete options.timeout;
+      
+      return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Network request timed out')), timeout)
+        )
+      ]);
+    }
+
+    const response = await fetchWithTimeout(`${API_URL}${endpoint}`, config);
     const responseData = await response.json();
 
     if (!response.ok) {

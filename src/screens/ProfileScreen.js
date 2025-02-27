@@ -7,12 +7,14 @@ import {
   ScrollView, 
   TouchableOpacity,
   StatusBar,
-  FlatList
+  FlatList,
+  Image
 } from 'react-native';
 import { Icon } from 'react-native-elements';
 import ProfileHeader from '../components/profile/ProfileHeader';
 import PetProfileCard from '../components/profile/PetProfileCard';
 import { userProfile, userPets } from '../data/profileData';
+import SupabaseTest from '../components/SupabaseTest';
 
 const ProfileScreen = () => {
   const [activeTab, setActiveTab] = useState('pets');
@@ -134,6 +136,9 @@ const ProfileScreen = () => {
         <ProfileHeader user={userProfile} />
         {renderTabs()}
         {renderTabContent()}
+
+        {/* Supabase Connection Test Section */}
+        <SupabaseTest />
       </ScrollView>
     </SafeAreaView>
   );

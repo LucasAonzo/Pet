@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -8,32 +8,42 @@ import {
   TouchableOpacity, 
   ScrollView, 
   SafeAreaView, 
-  StatusBar 
+  StatusBar,
+  RefreshControl
 } from 'react-native';
 import { Icon } from 'react-native-elements';
-import PetCard from '../components/PetCard';
-import { petsData, categoriesData, servicesData, plansData, nearbyCareData } from '../data/mockData';
+import AnimalList from '../components/AnimalList';
+import { categoriesData, servicesData, plansData, nearbyCareData } from '../data/mockData';
+import { useQueryClient } from '@tanstack/react-query';
 
 const HomeScreen = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [pets, setPets] = useState(petsData);
   const [searchText, setSearchText] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const queryClient = useQueryClient();
   
-  // Toggle favorite status
-  const handleToggleFavorite = (petId) => {
-    setPets(
-      pets.map(pet => 
-        pet.id === petId 
-          ? { ...pet, favorite: !pet.favorite } 
-          : pet
-      )
-    );
-  };
+  // Prepare filters for API request using useMemo for optimization
+  const filters = useMemo(() => {
+    const filterObj = {};
+    
+    if (selectedCategory !== 'all') {
+      filterObj.species = selectedCategory;
+    }
+    
+    if (searchText.trim()) {
+      filterObj.search = searchText.trim();
+    }
+    
+    return filterObj;
+  }, [selectedCategory, searchText]);
   
-  // Filter pets by category
-  const filteredPets = selectedCategory === 'all' 
-    ? pets 
-    : pets.filter(pet => pet.type === selectedCategory);
+  // Handle refresh
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    // Invalidate and refetch animals data
+    await queryClient.invalidateQueries(['animals']);
+    setRefreshing(false);
+  }, [queryClient]);
   
   return (
     <View style={styles.container}>
@@ -67,6 +77,14 @@ const HomeScreen = ({ navigation }) => {
         <ScrollView 
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 90 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#8e74ae']}
+              tintColor="#8e74ae"
+            />
+          }
         >
           {/* Search Bar */}
           <View style={styles.searchContainer}>
@@ -79,7 +97,7 @@ const HomeScreen = ({ navigation }) => {
               />
             </View>
             <TouchableOpacity style={styles.searchButton}>
-              <Icon name="search" type="material-community" color="#fff" size={24} />
+              <Icon name="magnify" type="material-community" color="#fff" size={24} />
             </TouchableOpacity>
           </View>
 
@@ -137,16 +155,13 @@ const HomeScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-          {/* Pet Cards */}
+          {/* Pet Cards - Now using AnimalList instead of mock data */}
           <View style={styles.petsContainer}>
-            {filteredPets.map((pet) => (
-              <PetCard 
-                key={pet.id} 
-                pet={pet}
-                onToggleFavorite={handleToggleFavorite}
-                navigation={navigation}
-              />
-            ))}
+            <AnimalList
+              navigation={navigation}
+              filters={filters}
+              onRefresh={onRefresh}
+            />
           </View>
 
           {/* Services Section */}
